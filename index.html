@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Periodic Table</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background-color: #f0f0f0; padding: 10px; }
+
+    h1 { text-align: center; font-size: 20px; margin-bottom: 8px; color: #333; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(18, 36px);
+      gap: 2px;
+    }
+
+    .cell {
+      width: 36px; height: 40px; border-radius: 3px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer; border: 1px solid transparent;
+      transition: transform 0.1s;
+      position: relative;
+    }
+    .cell:hover { transform: scale(1.15); z-index: 10; border-color: #333; }
+    .cell .num  { font-size: 7px;   line-height: 1; }
+    .cell .sym  { font-size: 11px;  font-weight: bold; line-height: 1.2; }
+    .cell .name { font-size: 5.5px; line-height: 1; text-align: center; white-space: nowrap; overflow: hidden; max-width: 34px; }
+
+    .empty { background: none; }
+
+    /* Category colors */
+    .alkali     { background: #ff9999; color: #5a0000; }
+    .alkaline   { background: #ffdead; color: #4a2800; }
+    .transition { background: #ffc0c0; color: #4a0000; }
+    .post       { background: #cccccc; color: #222; }
+    .metalloid  { background: #cccc99; color: #333300; }
+    .nonmetal   { background: #a0ffa0; color: #004000; }
+    .halogen    { background: #ffff99; color: #444400; }
+    .noble      { background: #c0ffff; color: #004040; }
+    .lanthanide { background: #ffbfff; color: #440044; }
+    .actinide   { background: #ff99cc; color: #440022; }
+
+    /* Info box */
+    #info {
+      margin: 10px auto;
+      max-width: 500px;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: white;
+      font-size: 13px;
+      color: #333;
+      min-height: 52px;
+    }
+    #info strong { font-size: 15px; }
+    #info span   { color: #666; }
+
+    /* Legend */
+    .legend {
+      display: flex; flex-wrap: wrap;
+      gap: 6px; margin: 8px 0 6px;
+      justify-content: center;
+    }
+    .leg { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #555; }
+    .leg-box { width: 12px; height: 12px; border-radius: 2px; }
+
+    .sep-row { grid-column: 1 / -1; height: 4px; }
+  </style>
+</head>
+<body>
+
+<h1>Periodic Table of Elements</h1>
+
+<div class="legend">
+  <div class="leg"><div class="leg-box alkali"></div>Alkali Metal</div>
+  <div class="leg"><div class="leg-box alkaline"></div>Alkaline Earth</div>
+  <div class="leg"><div class="leg-box transition"></div>Transition Metal</div>
+  <div class="leg"><div class="leg-box post"></div>Post-transition</div>
+  <div class="leg"><div class="leg-box metalloid"></div>Metalloid</div>
+  <div class="leg"><div class="leg-box nonmetal"></div>Nonmetal</div>
+  <div class="leg"><div class="leg-box halogen"></div>Halogen</div>
+  <div class="leg"><div class="leg-box noble"></div>Noble Gas</div>
+  <div class="leg"><div class="leg-box lanthanide"></div>Lanthanide</div>
+  <div class="leg"><div class="leg-box actinide"></div>Actinide</div>
+</div>
+
+<div class="grid" id="ptgrid"></div>
+
+<div id="info"><span>Click any element to see details</span></div>
+
+<script>
+  var elements = [
+    {n:1,  sym:"H",  name:"Hydrogen",      cat:"nonmetal",   mass:"1.008",  col:1,  row:1},
+    {n:2,  sym:"He", name:"Helium",         cat:"noble",      mass:"4.003",  col:18, row:1},
+    {n:3,  sym:"Li", name:"Lithium",        cat:"alkali",     mass:"6.941",  col:1,  row:2},
+    {n:4,  sym:"Be", name:"Beryllium",      cat:"alkaline",   mass:"9.012",  col:2,  row:2},
+    {n:5,  sym:"B",  name:"Boron",          cat:"metalloid",  mass:"10.81",  col:13, row:2},
+    {n:6,  sym:"C",  name:"Carbon",         cat:"nonmetal",   mass:"12.01",  col:14, row:2},
+    {n:7,  sym:"N",  name:"Nitrogen",       cat:"nonmetal",   mass:"14.01",  col:15, row:2},
+    {n:8,  sym:"O",  name:"Oxygen",         cat:"nonmetal",   mass:"16.00",  col:16, row:2},
+    {n:9,  sym:"F",  name:"Fluorine",       cat:"halogen",    mass:"19.00",  col:17, row:2},
+    {n:10, sym:"Ne", name:"Neon",           cat:"noble",      mass:"20.18",  col:18, row:2},
+    {n:11, sym:"Na", name:"Sodium",         cat:"alkali",     mass:"22.99",  col:1,  row:3},
+    {n:12, sym:"Mg", name:"Magnesium",      cat:"alkaline",   mass:"24.31",  col:2,  row:3},
+    {n:13, sym:"Al", name:"Aluminum",       cat:"post",       mass:"26.98",  col:13, row:3},
+    {n:14, sym:"Si", name:"Silicon",        cat:"metalloid",  mass:"28.09",  col:14, row:3},
+    {n:15, sym:"P",  name:"Phosphorus",     cat:"nonmetal",   mass:"30.97",  col:15, row:3},
+    {n:16, sym:"S",  name:"Sulfur",         cat:"nonmetal",   mass:"32.07",  col:16, row:3},
+    {n:17, sym:"Cl", name:"Chlorine",       cat:"halogen",    mass:"35.45",  col:17, row:3},
+    {n:18, sym:"Ar", name:"Argon",          cat:"noble",      mass:"39.95",  col:18, row:3},
+    {n:19, sym:"K",  name:"Potassium",      cat:"alkali",     mass:"39.10",  col:1,  row:4},
+    {n:20, sym:"Ca", name:"Calcium",        cat:"alkaline",   mass:"40.08",  col:2,  row:4},
+    {n:21, sym:"Sc", name:"Scandium",       cat:"transition", mass:"44.96",  col:3,  row:4},
+    {n:22, sym:"Ti", name:"Titanium",       cat:"transition", mass:"47.87",  col:4,  row:4},
+    {n:23, sym:"V",  name:"Vanadium",       cat:"transition", mass:"50.94",  col:5,  row:4},
+    {n:24, sym:"Cr", name:"Chromium",       cat:"transition", mass:"52.00",  col:6,  row:4},
+    {n:25, sym:"Mn", name:"Manganese",      cat:"transition", mass:"54.94",  col:7,  row:4},
+    {n:26, sym:"Fe", name:"Iron",           cat:"transition", mass:"55.85",  col:8,  row:4},
+    {n:27, sym:"Co", name:"Cobalt",         cat:"transition", mass:"58.93",  col:9,  row:4},
+    {n:28, sym:"Ni", name:"Nickel",         cat:"transition", mass:"58.69",  col:10, row:4},
+    {n:29, sym:"Cu", name:"Copper",         cat:"transition", mass:"63.55",  col:11, row:4},
+    {n:30, sym:"Zn", name:"Zinc",           cat:"transition", mass:"65.38",  col:12, row:4},
+    {n:31, sym:"Ga", name:"Gallium",        cat:"post",       mass:"69.72",  col:13, row:4},
+    {n:32, sym:"Ge", name:"Germanium",      cat:"metalloid",  mass:"72.63",  col:14, row:4},
+    {n:33, sym:"As", name:"Arsenic",        cat:"metalloid",  mass:"74.92",  col:15, row:4},
+    {n:34, sym:"Se", name:"Selenium",       cat:"nonmetal",   mass:"78.97",  col:16, row:4},
+    {n:35, sym:"Br", name:"Bromine",        cat:"halogen",    mass:"79.90",  col:17, row:4},
+    {n:36, sym:"Kr", name:"Krypton",        cat:"noble",      mass:"83.80",  col:18, row:4},
+    {n:37, sym:"Rb", name:"Rubidium",       cat:"alkali",     mass:"85.47",  col:1,  row:5},
+    {n:38, sym:"Sr", name:"Strontium",      cat:"alkaline",   mass:"87.62",  col:2,  row:5},
+    {n:39, sym:"Y",  name:"Yttrium",        cat:"transition", mass:"88.91",  col:3,  row:5},
+    {n:40, sym:"Zr", name:"Zirconium",      cat:"transition", mass:"91.22",  col:4,  row:5},
+    {n:41, sym:"Nb", name:"Niobium",        cat:"transition", mass:"92.91",  col:5,  row:5},
+    {n:42, sym:"Mo", name:"Molybdenum",     cat:"transition", mass:"95.96",  col:6,  row:5},
+    {n:43, sym:"Tc", name:"Technetium",     cat:"transition", mass:"(98)",   col:7,  row:5},
+    {n:44, sym:"Ru", name:"Ruthenium",      cat:"transition", mass:"101.1",  col:8,  row:5},
+    {n:45, sym:"Rh", name:"Rhodium",        cat:"transition", mass:"102.9",  col:9,  row:5},
+    {n:46, sym:"Pd", name:"Palladium",      cat:"transition", mass:"106.4",  col:10, row:5},
+    {n:47, sym:"Ag", name:"Silver",         cat:"transition", mass:"107.9",  col:11, row:5},
+    {n:48, sym:"Cd", name:"Cadmium",        cat:"transition", mass:"112.4",  col:12, row:5},
+    {n:49, sym:"In", name:"Indium",         cat:"post",       mass:"114.8",  col:13, row:5},
+    {n:50, sym:"Sn", name:"Tin",            cat:"post",       mass:"118.7",  col:14, row:5},
+    {n:51, sym:"Sb", name:"Antimony",       cat:"metalloid",  mass:"121.8",  col:15, row:5},
+    {n:52, sym:"Te", name:"Tellurium",      cat:"metalloid",  mass:"127.6",  col:16, row:5},
+    {n:53, sym:"I",  name:"Iodine",         cat:"halogen",    mass:"126.9",  col:17, row:5},
+    {n:54, sym:"Xe", name:"Xenon",          cat:"noble",      mass:"131.3",  col:18, row:5},
+    {n:55, sym:"Cs", name:"Cesium",         cat:"alkali",     mass:"132.9",  col:1,  row:6},
+    {n:56, sym:"Ba", name:"Barium",         cat:"alkaline",   mass:"137.3",  col:2,  row:6},
+    {n:57, sym:"La", name:"Lanthanum",      cat:"lanthanide", mass:"138.9",  col:3,  row:6},
+    {n:72, sym:"Hf", name:"Hafnium",        cat:"transition", mass:"178.5",  col:4,  row:6},
+    {n:73, sym:"Ta", name:"Tantalum",       cat:"transition", mass:"180.9",  col:5,  row:6},
+    {n:74, sym:"W",  name:"Tungsten",       cat:"transition", mass:"183.8",  col:6,  row:6},
+    {n:75, sym:"Re", name:"Rhenium",        cat:"transition", mass:"186.2",  col:7,  row:6},
+    {n:76, sym:"Os", name:"Osmium",         cat:"transition", mass:"190.2",  col:8,  row:6},
+    {n:77, sym:"Ir", name:"Iridium",        cat:"transition", mass:"192.2",  col:9,  row:6},
+    {n:78, sym:"Pt", name:"Platinum",       cat:"transition", mass:"195.1",  col:10, row:6},
+    {n:79, sym:"Au", name:"Gold",           cat:"transition", mass:"197.0",  col:11, row:6},
+    {n:80, sym:"Hg", name:"Mercury",        cat:"transition", mass:"200.6",  col:12, row:6},
+    {n:81, sym:"Tl", name:"Thallium",       cat:"post",       mass:"204.4",  col:13, row:6},
+    {n:82, sym:"Pb", name:"Lead",           cat:"post",       mass:"207.2",  col:14, row:6},
+    {n:83, sym:"Bi", name:"Bismuth",        cat:"post",       mass:"209.0",  col:15, row:6},
+    {n:84, sym:"Po", name:"Polonium",       cat:"post",       mass:"(209)",  col:16, row:6},
+    {n:85, sym:"At", name:"Astatine",       cat:"halogen",    mass:"(210)",  col:17, row:6},
+    {n:86, sym:"Rn", name:"Radon",          cat:"noble",      mass:"(222)",  col:18, row:6},
+    {n:87, sym:"Fr", name:"Francium",       cat:"alkali",     mass:"(223)",  col:1,  row:7},
+    {n:88, sym:"Ra", name:"Radium",         cat:"alkaline",   mass:"(226)",  col:2,  row:7},
+    {n:89, sym:"Ac", name:"Actinium",       cat:"actinide",   mass:"(227)",  col:3,  row:7},
+    {n:104,sym:"Rf", name:"Rutherfordium",  cat:"transition", mass:"(267)",  col:4,  row:7},
+    {n:105,sym:"Db", name:"Dubnium",        cat:"transition", mass:"(268)",  col:5,  row:7},
+    {n:106,sym:"Sg", name:"Seaborgium",     cat:"transition", mass:"(271)",  col:6,  row:7},
+    {n:107,sym:"Bh", name:"Bohrium",        cat:"transition", mass:"(272)",  col:7,  row:7},
+    {n:108,sym:"Hs", name:"Hassium",        cat:"transition", mass:"(277)",  col:8,  row:7},
+    {n:109,sym:"Mt", name:"Meitnerium",     cat:"transition", mass:"(276)",  col:9,  row:7},
+    {n:110,sym:"Ds", name:"Darmstadtium",   cat:"transition", mass:"(281)",  col:10, row:7},
+    {n:111,sym:"Rg", name:"Roentgenium",    cat:"transition", mass:"(280)",  col:11, row:7},
+    {n:112,sym:"Cn", name:"Copernicium",    cat:"transition", mass:"(285)",  col:12, row:7},
+    {n:113,sym:"Nh", name:"Nihonium",       cat:"post",       mass:"(284)",  col:13, row:7},
+    {n:114,sym:"Fl", name:"Flerovium",      cat:"post",       mass:"(289)",  col:14, row:7},
+    {n:115,sym:"Mc", name:"Moscovium",      cat:"post",       mass:"(288)",  col:15, row:7},
+    {n:116,sym:"Lv", name:"Livermorium",    cat:"post",       mass:"(293)",  col:16, row:7},
+    {n:117,sym:"Ts", name:"Tennessine",     cat:"halogen",    mass:"(294)",  col:17, row:7},
+    {n:118,sym:"Og", name:"Oganesson",      cat:"noble",      mass:"(294)",  col:18, row:7},
+    // Lanthanides row 9
+    {n:58, sym:"Ce", name:"Cerium",         cat:"lanthanide", mass:"140.1",  col:4,  row:9},
+    {n:59, sym:"Pr", name:"Praseodymium",   cat:"lanthanide", mass:"140.9",  col:5,  row:9},
+    {n:60, sym:"Nd", name:"Neodymium",      cat:"lanthanide", mass:"144.2",  col:6,  row:9},
+    {n:61, sym:"Pm", name:"Promethium",     cat:"lanthanide", mass:"(145)",  col:7,  row:9},
+    {n:62, sym:"Sm", name:"Samarium",       cat:"lanthanide", mass:"150.4",  col:8,  row:9},
+    {n:63, sym:"Eu", name:"Europium",       cat:"lanthanide", mass:"152.0",  col:9,  row:9},
+    {n:64, sym:"Gd", name:"Gadolinium",     cat:"lanthanide", mass:"157.3",  col:10, row:9},
+    {n:65, sym:"Tb", name:"Terbium",        cat:"lanthanide", mass:"158.9",  col:11, row:9},
+    {n:66, sym:"Dy", name:"Dysprosium",     cat:"lanthanide", mass:"162.5",  col:12, row:9},
+    {n:67, sym:"Ho", name:"Holmium",        cat:"lanthanide", mass:"164.9",  col:13, row:9},
+    {n:68, sym:"Er", name:"Erbium",         cat:"lanthanide", mass:"167.3",  col:14, row:9},
+    {n:69, sym:"Tm", name:"Thulium",        cat:"lanthanide", mass:"168.9",  col:15, row:9},
+    {n:70, sym:"Yb", name:"Ytterbium",      cat:"lanthanide", mass:"173.1",  col:16, row:9},
+    {n:71, sym:"Lu", name:"Lutetium",       cat:"lanthanide", mass:"175.0",  col:17, row:9},
+    // Actinides row 10
+    {n:90, sym:"Th", name:"Thorium",        cat:"actinide",   mass:"232.0",  col:4,  row:10},
+    {n:91, sym:"Pa", name:"Protactinium",   cat:"actinide",   mass:"231.0",  col:5,  row:10},
+    {n:92, sym:"U",  name:"Uranium",        cat:"actinide",   mass:"238.0",  col:6,  row:10},
+    {n:93, sym:"Np", name:"Neptunium",      cat:"actinide",   mass:"(237)",  col:7,  row:10},
+    {n:94, sym:"Pu", name:"Plutonium",      cat:"actinide",   mass:"(244)",  col:8,  row:10},
+    {n:95, sym:"Am", name:"Americium",      cat:"actinide",   mass:"(243)",  col:9,  row:10},
+    {n:96, sym:"Cm", name:"Curium",         cat:"actinide",   mass:"(247)",  col:10, row:10},
+    {n:97, sym:"Bk", name:"Berkelium",      cat:"actinide",   mass:"(247)",  col:11, row:10},
+    {n:98, sym:"Cf", name:"Californium",    cat:"actinide",   mass:"(251)",  col:12, row:10},
+    {n:99, sym:"Es", name:"Einsteinium",    cat:"actinide",   mass:"(252)",  col:13, row:10},
+    {n:100,sym:"Fm", name:"Fermium",        cat:"actinide",   mass:"(257)",  col:14, row:10},
+    {n:101,sym:"Md", name:"Mendelevium",    cat:"actinide",   mass:"(258)",  col:15, row:10},
+    {n:102,sym:"No", name:"Nobelium",       cat:"actinide",   mass:"(259)",  col:16, row:10},
+    {n:103,sym:"Lr", name:"Lawrencium",     cat:"actinide",   mass:"(262)",  col:17, row:10},
+  ];
+
+  var catLabels = {
+    alkali:     "Alkali Metal",
+    alkaline:   "Alkaline Earth Metal",
+    transition: "Transition Metal",
+    post:       "Post-transition Metal",
+    metalloid:  "Metalloid",
+    nonmetal:   "Nonmetal",
+    halogen:    "Halogen",
+    noble:      "Noble Gas",
+    lanthanide: "Lanthanide",
+    actinide:   "Actinide"
+  };
+
+  var grid = document.getElementById('ptgrid');
+
+  // Build lookup by row,col
+  var map = {};
+  elements.forEach(function(e) { map[e.row + ',' + e.col] = e; });
+
+  var totalRows = 10;
+
+  for (var row = 1; row <= totalRows; row++) {
+
+    // Row 8 is a blank gap between main table and lanthanides/actinides
+    if (row === 8) {
+      var gap = document.createElement('div');
+      gap.className = 'sep-row';
+      grid.appendChild(gap);
+      continue;
+    }
+
+    for (var col = 1; col <= 18; col++) {
+      var e = map[row + ',' + col];
+
+      if (!e) {
+        // Show label for lanthanide/actinide rows
+        if (row === 9 && col === 1) {
+          var lbl = document.createElement('div');
+          lbl.style.cssText = 'grid-column:1/4; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:9px; color:#888;';
+          lbl.textContent = '57-71';
+          grid.appendChild(lbl);
+          col = 3;
+        } else if (row === 10 && col === 1) {
+          var lbl2 = document.createElement('div');
+          lbl2.style.cssText = 'grid-column:1/4; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; font-size:9px; color:#888;';
+          lbl2.textContent = '89-103';
+          grid.appendChild(lbl2);
+          col = 3;
+        } else {
+          var empty = document.createElement('div');
+          empty.className = 'empty cell';
+          grid.appendChild(empty);
+        }
+      } else {
+        var cell = document.createElement('div');
+        cell.className = 'cell ' + e.cat;
+        cell.innerHTML =
+          '<span class="num">'  + e.n    + '</span>' +
+          '<span class="sym">'  + e.sym  + '</span>' +
+          '<span class="name">' + e.name + '</span>';
+
+        // Click to show element info
+        cell.onclick = (function(el) {
+          return function() {
+            document.getElementById('info').innerHTML =
+              '<strong>' + el.sym + ' — ' + el.name + '</strong> &nbsp;' +
+              '<span>#' + el.n + ' &bull; ' + catLabels[el.cat] + ' &bull; Mass: ' + el.mass + '</span>';
+          };
+        })(e);
+
+        grid.appendChild(cell);
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
